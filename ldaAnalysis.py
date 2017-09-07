@@ -121,12 +121,12 @@ def create_wordcloud(topic_freq_word, file_name, font_path, background_color="wh
 
     print("# END")
 
-if __name__ == '__main__':
+if __name__ == "__main__":
 
     print("# start")
-    docs, dictionary = create_gensim_dictionary("./Data/対応方法", mecab_path=" -d /usr/lib64/mecab/dic/mecab-ipadic-neologd")
+    docs, dictionary = create_gensim_dictionary("/home/tamashiro/AI/OPC/LDAPython/Data/対応方法", mecab_path=" -d /usr/lib/mecab/dic/mecab-ipadic-neologd")
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
     lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model.lda")
     corpus_topic = doc2topic_id(lda_tfidf)
     _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, corpus_topic)
-    create_wordcloud(topic_freq_word, "wordcloudsample", "/usr/share/fonts/ipa-gothic/ipag.ttf")
+    create_wordcloud(topic_freq_word, "wordcloudsample", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
