@@ -69,12 +69,22 @@ def lda(dictionary, corpus, corpus_tfidf, lda_model=None, save_name="test.model"
 
     return lda_tfidf
 
-def doc2topic_id(lda_tfidf):
+def corpus2lda_tfidf(corpus, lda_tfidf):
+
+    print("# corpus2lda_tfidf")
+    corpus_lda_tfidf = {}
+    lda_tfidf_list = list(lda_tfidf)
+    for id, docname in enumerate(corpus.keys()):
+        corpus_lda_tfidf.update({docname: lda_tfidf_list[id]})
+
+    return corpus_lda_tfidf
+
+def doc2topic_id(corpus_lda_tfidf):
 
     print("# doc2topic_id")
-    corpus_topic = []
-    for doc_id, doc in enumerate(lda_tfidf):
-        corpus_topic.append(max(doc, key=lambda x:x[1])[0])
+    corpus_topic = {}
+    for doc_name, doc in corpus_lda_tfidf.items():
+        corpus_topic.update({doc_name: max(doc, key=lambda x:x[1])[0]})
 
     return corpus_topic
 
@@ -128,6 +138,7 @@ if __name__ == "__main__":
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
     #lda_tfidf = lda(dictionary, corpus, corpus_tfidf, save_name="Data/model/model_Noun.lda")
     lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model_Noun.lda")
-    corpus_topic = doc2topic_id(lda_tfidf)
+    corpus_lda_tfidf = corpus2lda_tfidf(corpus, lda_tfidf)
+    corpus_topic = doc2topic_id(corpus_lda_tfidf)
     _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, corpus_topic)
     create_wordcloud(topic_freq_word, "wordcloud_Noun", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
