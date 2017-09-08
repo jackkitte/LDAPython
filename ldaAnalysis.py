@@ -26,7 +26,7 @@ def create_gensim_dictionary(data_path, mecab_path=None, no_below=2, no_above=0.
                     while res:
                         arr = res.feature.split(",")
                         res = res.next
-                        if arr[0] == "記号":
+                        if arr[0] != "名詞":
                             continue
                         elif len(arr[6]) == 1:
                             continue
@@ -126,7 +126,8 @@ if __name__ == "__main__":
     print("# start")
     docs, dictionary = create_gensim_dictionary("/home/tamashiro/AI/OPC/LDAPython/Data/対応方法", mecab_path=" -d /usr/lib/mecab/dic/mecab-ipadic-neologd")
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
-    lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model.lda")
+    #lda_tfidf = lda(dictionary, corpus, corpus_tfidf, save_name="Data/model/model_Noun.lda")
+    lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model_Noun.lda")
     corpus_topic = doc2topic_id(lda_tfidf)
     _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, corpus_topic)
-    create_wordcloud(topic_freq_word, "wordcloudsample", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+    create_wordcloud(topic_freq_word, "wordcloud_Noun", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
