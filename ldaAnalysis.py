@@ -56,86 +56,29 @@ def create_gensim_corpus(docs, dictionary):
 
     return corpus, corpus_tfidf
 
-def create_gensim_topic_corpus(docs, dictionary, topic_docs):
-
-    print("# create topic corpus")
-    corpus_topic = collections.OrderedDict()
-    for topic, files in topic_docs.items():
-        if topic not in corpus_topic.keys():
-            corpus_topic[topic] = collections.OrderedDict()
-        for file_name in files:
-            corpus_topic[topic][file_name] = dictionary.doc2bow(docs[file_name])
-
-    topic_tfidf = collections.OrderedDict()
-    for topic in topic_docs:
-        tfidf = gensim.models.TfidfModel(corpus_topic[topic].values())
-        topic_tfidf[topic] = tfidf[corpus_topic[topic].values()]
-
-    corpus_topic_tfidf = collections.OrderedDict()
-    for topic, corpus in corpus_topic.items():
-        tfidf_list = list(topic_tfidf[topic])
-        corpus_topic_tfidf[topic] = collections.OrderedDict()
-        for id, file_name in enumerate(corpus.keys()):
-            corpus_topic_tfidf[topic][file_name] = tfidf_list[id]
-
-    return corpus_topic, corpus_topic_tfidf
-
-
 def lda(dictionary, corpus, corpus_tfidf, lda_model=None, save_name="test.model", num_topics=2):
 
     print("# Start LDA")
-    corpus_tfidf_list = corpus_tfidf.values()
+    lda_tfidf = []
     if lda_model is None:
-        lda_model = gensim.models.LdaModel(corpus.values(), id2word=dictionary, num_topics=num_topics)
-        lda_tfidf = lda_model[corpus_tfidf_list]
+        lda_model = gensim.models.LdaModel(corpus_tfidf.values(), id2word=dictionary, num_topics=num_topics, random_state=0)
         lda_model.save(save_name)
+        for doc_tfidf in corpus_tfidf.values():
+            lda_tfidf.append(lda_model[doc_tfidf])
     else:
         lda_model = gensim.models.LdaModel.load(lda_model)
-        lda_tfidf = lda_model[corpus_tfidf_list]
+        for doc_tfidf in corpus_tfidf.values():
+            lda_tfidf.append(lda_model[doc_tfidf])
 
     corpus_lda_tfidf = collections.OrderedDict()
-    lda_tfidf_ = list(lda_tfidf)
     for id, docname in enumerate(corpus_tfidf.keys()):
-        corpus_lda_tfidf[docname] = lda_tfidf_[id]
+        corpus_lda_tfidf[docname] = lda_tfidf[id]
+    
+    print(lda_model.print_topics(num_words=20))
+    print(lda_model.get_topic_terms(0))
+    print(lda_model.get_topic_terms(1))
 
     return corpus_lda_tfidf
-
-def topic_lda(dictionary, corpus_topic, corpus_topic_tfidf, lda_model=None, save_name="test.model", num_topics=2):
-
-    print("# Start LDA(topic)")
-    lda_tfidf_topic = collections.OrderedDict()
-    if lda_model is None:
-        for topic, tfidfs in corpus_topic_tfidf.items():
-            corpus_topic_tfidf_list = tfidfs.values()
-            lda_model = gensim.models.LdaModel(corpus[topic].values(), id2word=dictionary, num_topics=num_topics)
-            lda_tfidf_topic[topic] = lda_model[corpus_topic_tfidf_list]
-            lda_model.save(save_name)
-    else:
-        lda_model = gensim.models.LdaModel.load(lda_model)
-        for topic, tfidfs in corpus_topic_tfidf.items():
-            corpus_topic_tfidf_list = tfidfs.values()
-            lda_tfidf_topic[topic] = lda_model[corpus_topic_tfidf_list]
-
-    corpus_lda_tfidf_topic = collections.OrderedDict()
-    for topic, docnames in corpus_topic_tfidf.items():
-        corpus_lda_tfidf_topic[topic] = collections.OrderedDict()
-        lda_tfidf_list = list(lda_tfidf_topic[topic])
-        for id, docname in enumerate(docnames.keys()):
-            corpus_lda_tfidf_topic[topic][docname] = lda_tfidf_list[id]
-
-    return corpus_lda_tfidf_topic
-
-def topic_doc2topic_id(corpus_lda_tfidf_topic):
-
-    print("# topic doc2topic_id")
-    docs_topic = collections.OrderedDict()
-    for topic, topics in corpus_lda_tfidf_topic.items():
-        docs_topic[topic] = collections.OrderedDict()
-        for doc_name, doc in topics.items():
-            docs_topic[topic][doc_name] = max(doc, key=lambda x:x[1])[0]
-        print(collections.Counter(docs_topic[topic].values()))
-
-    return docs_topic
 
 def doc2topic_id(corpus_lda_tfidf):
 
@@ -144,20 +87,7 @@ def doc2topic_id(corpus_lda_tfidf):
     for doc_name, doc in corpus_lda_tfidf.items():
         docs_topic[doc_name] = max(doc, key=lambda x:x[1])[0]
 
-    print(collections.Counter(docs_topic.values()))
-
-    topic_docs = collections.OrderedDict()
-    for docname, topic in docs_topic.items():
-        if topic == 0:
-            if topic not in topic_docs.keys():
-                topic_docs[topic] = []
-            topic_docs[topic].append(docname)
-        else:
-            if topic not in topic_docs.keys():
-                topic_docs[topic] = []
-            topic_docs[topic].append(docname)
-
-    return docs_topic, topic_docs
+    return docs_topic
 
 def word_cloud_list(dictionary, corpus_tfidf, docs_topic):
 
@@ -208,9 +138,6 @@ if __name__ == "__main__":
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
     #corpus_lda_tfidf = lda(dictionary, corpus, corpus_tfidf, save_name="Data/model/model_Noun.lda")
     corpus_lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model_Noun.lda")
-    docs_topic, topic_docs = doc2topic_id(corpus_lda_tfidf)
-    corpus_topic, corpus_topic_tfidf = create_gensim_topic_corpus(docs, dictionary, topic_docs)
-    corpus_lda_tfidf_topic = topic_lda(dictionary, corpus_topic, corpus_topic_tfidf, lda_model="Data/model/model_Noun.lda")
-    topic_docs_topic = topic_doc2topic_id(corpus_lda_tfidf_topic)
+    docs_topic = doc2topic_id(corpus_lda_tfidf)
     _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, docs_topic)
-    #create_wordcloud(topic_freq_word, "wordcloud_Noun_b", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+    create_wordcloud(topic_freq_word, "wordcloud_Noun", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
