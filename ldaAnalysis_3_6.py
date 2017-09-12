@@ -74,11 +74,11 @@ def lda(dictionary, corpus, corpus_tfidf, lda_model=None, save_name="test.model"
     for id, docname in enumerate(corpus_tfidf.keys()):
         corpus_lda_tfidf[docname] = lda_tfidf[id]
     
-    print(lda_model.print_topics(num_words=20))
-    print(lda_model.get_topic_terms(0))
-    print(lda_model.get_topic_terms(1))
+    topic_terms = []
+    for id in range(num_topics):
+        topic_terms.append(lda_model.get_topic_terms(id, topn=20))
 
-    return corpus_lda_tfidf
+    return corpus_lda_tfidf, topic_terms
 
 def doc2topic_id(corpus_lda_tfidf):
 
@@ -91,11 +91,17 @@ def doc2topic_id(corpus_lda_tfidf):
 
     return docs_topic
 
-def word_cloud_list(dictionary, corpus_tfidf, docs_topic):
+def word_cloud_list(dictionary, corpus_tfidf, docs_topic, topic_terms):
 
     print("# create word cloud list")
     topic_freq_word_id = {}
     topic_freq_word = {}
+    topic_terms_20_above = {}
+
+    for topic, terms in enumerate(topic_terms):
+        topic_terms_20_above[topic] = {}
+        for word_id, degree in terms:
+            topic_terms_20_above[topic][dictionary[word_id]] = degree
     
     for docname, topic in docs_topic.items():
         for word_id, tfidf in corpus_tfidf[docname]:
@@ -110,7 +116,7 @@ def word_cloud_list(dictionary, corpus_tfidf, docs_topic):
                 topic_freq_word_id[topic][word_id] = sum_tfidf
                 topic_freq_word[topic][dictionary[word_id]] = sum_tfidf
 
-    return topic_freq_word_id, topic_freq_word
+    return topic_freq_word_id, topic_freq_word, topic_terms_20_above
 
 def sort_frequency_word(topic_freq_word):
 
@@ -122,11 +128,11 @@ def sort_frequency_word(topic_freq_word):
 
     return topic_sorted
 
-def create_wordcloud(topic_freq_word, file_name, font_path, background_color="white", width=1024, height=674):
+def create_wordcloud(topic_freq_word, topic_terms_20_above, file_name, font_path, background_color="white", width=1024, height=674):
 
     print("# create word cloud")
     wordcloud_model = WordCloud(background_color=background_color, font_path=font_path, width=width, height=height)
-    for topic, frequencies in topic_freq_word.items():
+    for topic, frequencies in topic_terms_20_above.items():
        wordcloud_obj = wordcloud_model.generate_from_frequencies(frequencies)
        save_name = "{0}{1}.png".format(file_name, topic)
        wordcloud_obj.to_file(save_name)
@@ -138,8 +144,11 @@ if __name__ == "__main__":
     print("# start")
     docs, dictionary = create_gensim_dictionary("/home/tamashiro/AI/OPC/LDAPython/Data/対応方法", mecab_path=" -d /usr/lib/mecab/dic/mecab-ipadic-neologd")
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
-    #corpus_lda_tfidf = lda(dictionary, corpus, corpus_tfidf, save_name="Data/model/model_Noun.lda")
-    corpus_lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model_Noun.lda")
-    docs_topic = doc2topic_id(corpus_lda_tfidf)
-    _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, docs_topic)
-    create_wordcloud(topic_freq_word, "wordcloud_Noun_b", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+    for num_topics in range(6, 101):
+        lda_model = "Data/model/model_topic{0}.lda".format(num_topics)
+        cloud_name = "Data/wordcloud/wordcloud_{0}_topic".format(num_topics)
+        corpus_lda_tfidf, topic_terms = lda(dictionary, corpus, corpus_tfidf, save_name=lda_model, num_topics=num_topics)
+        #corpus_lda_tfidf, topic_terms = lda(dictionary, corpus, corpus_tfidf, lda_model=lda_model, num_topics=num_topics)
+        docs_topic = doc2topic_id(corpus_lda_tfidf)
+        _, topic_freq_word, topic_terms_20_above = word_cloud_list(dictionary, corpus_tfidf, docs_topic, topic_terms)
+        create_wordcloud(topic_freq_word, topic_terms_20_above, cloud_name, "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
