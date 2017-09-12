@@ -16,7 +16,7 @@ def create_gensim_dictionary(data_path, mecab_path=None, no_below=2, no_above=0.
 
     for root, dirs, files in os.walk(data_path):
         print("# morphological analysis")
-        docs = collections.OrderedDict()
+        docs = {}
         for docname in files:
             docs[docname] = []
             with open(os.path.join(data_path, docname), "r") as f:
@@ -42,14 +42,14 @@ def create_gensim_dictionary(data_path, mecab_path=None, no_below=2, no_above=0.
 def create_gensim_corpus(docs, dictionary):
 
     print("# create corpus")
-    corpus = collections.OrderedDict()
+    corpus = {}
     for file_name, word_list in docs.items():
         corpus[file_name] = dictionary.doc2bow(word_list)
 
     tfidf = gensim.models.TfidfModel(corpus.values())
     tfidf_list = tfidf[corpus.values()]
 
-    corpus_tfidf = collections.OrderedDict()
+    corpus_tfidf = {}
     tfidf_list_ = list(tfidf_list)
     for id, docname in enumerate(corpus.keys()):
         corpus_tfidf[docname] = tfidf_list_[id]
@@ -70,7 +70,7 @@ def lda(dictionary, corpus, corpus_tfidf, lda_model=None, save_name="test.model"
         for doc_tfidf in corpus_tfidf.values():
             lda_tfidf.append(lda_model[doc_tfidf])
 
-    corpus_lda_tfidf = collections.OrderedDict()
+    corpus_lda_tfidf = {}
     for id, docname in enumerate(corpus_tfidf.keys()):
         corpus_lda_tfidf[docname] = lda_tfidf[id]
     
@@ -83,7 +83,7 @@ def lda(dictionary, corpus, corpus_tfidf, lda_model=None, save_name="test.model"
 def doc2topic_id(corpus_lda_tfidf):
 
     print("# doc2topic_id")
-    docs_topic = collections.OrderedDict()
+    docs_topic = {}
     for doc_name, doc in corpus_lda_tfidf.items():
         docs_topic[doc_name] = max(doc, key=lambda x:x[1])[0]
 
@@ -94,14 +94,14 @@ def doc2topic_id(corpus_lda_tfidf):
 def word_cloud_list(dictionary, corpus_tfidf, docs_topic):
 
     print("# create word cloud list")
-    topic_freq_word_id = collections.OrderedDict()
-    topic_freq_word = collections.OrderedDict()
+    topic_freq_word_id = {}
+    topic_freq_word = {}
     
     for docname, topic in docs_topic.items():
         for word_id, tfidf in corpus_tfidf[docname]:
             if topic not in topic_freq_word_id.keys():
-                topic_freq_word_id[topic] = collections.OrderedDict()
-                topic_freq_word[topic] = collections.OrderedDict()
+                topic_freq_word_id[topic] = {}
+                topic_freq_word[topic] = {}
             if word_id not in topic_freq_word_id[topic]:
                 topic_freq_word_id[topic][word_id] = tfidf
                 topic_freq_word[topic][dictionary[word_id]] = tfidf
@@ -115,7 +115,7 @@ def word_cloud_list(dictionary, corpus_tfidf, docs_topic):
 def sort_frequency_word(topic_freq_word):
 
     print("# sort frequency word")
-    topic_sorted = collections.OrderedDict()
+    topic_sorted = {}
 
     for topic, topic_words in topic_freq_word.items():
         topic_sorted[topic] = sorted(topic_words.items(), key=lambda x:x[1], reverse=True)
@@ -142,4 +142,4 @@ if __name__ == "__main__":
     corpus_lda_tfidf = lda(dictionary, corpus, corpus_tfidf, lda_model="Data/model/model_Noun.lda")
     docs_topic = doc2topic_id(corpus_lda_tfidf)
     _, topic_freq_word = word_cloud_list(dictionary, corpus_tfidf, docs_topic)
-    create_wordcloud(topic_freq_word, "wordcloud_Noun_a", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+    create_wordcloud(topic_freq_word, "wordcloud_Noun_b", "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
