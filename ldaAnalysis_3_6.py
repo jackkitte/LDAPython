@@ -6,6 +6,7 @@ import MeCab
 import gensim
 import collections
 from wordcloud import WordCloud
+import multiprocessing as mp
 
 def create_gensim_dictionary(data_path, mecab_path=None, no_below=2, no_above=0.1):
 
@@ -139,11 +140,32 @@ def create_wordcloud(topic_freq_word, topic_terms_20_above, file_name, font_path
 
     print("# END")
 
+def subproc(p):
+
+    ini = int(L * p / proc)
+    fin = int(L * (p + 1) / proc)
+    if ini == 0:
+        ini = 2
+    for num_topics in range(ini, fin):
+        lda_model = "Data/model/multitest/model_topic{0}.lda".format(num_topics)
+        cloud_name = "Data/wordcloud/multitest/wordcloud_{0}_topic".format(num_topics)
+        corpus_lda_tfidf, topic_terms = lda(dictionary, corpus, corpus_tfidf, save_name=lda_model, num_topics=num_topics)
+        #corpus_lda_tfidf, topic_terms = lda(dictionary, corpus, corpus_tfidf, lda_model=lda_model, num_topics=num_topics)
+        docs_topic = doc2topic_id(corpus_lda_tfidf)
+        _, topic_freq_word, topic_terms_20_above = word_cloud_list(dictionary, corpus_tfidf, docs_topic, topic_terms)
+        create_wordcloud(topic_freq_word, topic_terms_20_above, cloud_name, "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+
 if __name__ == "__main__":
 
     print("# start")
     docs, dictionary = create_gensim_dictionary("/home/tamashiro/AI/OPC/LDAPython/Data/対応方法", mecab_path=" -d /usr/lib/mecab/dic/mecab-ipadic-neologd")
     corpus, corpus_tfidf = create_gensim_corpus(docs, dictionary)
+    L = 100
+    proc = 10
+    pool = mp.Pool(proc)
+    pool.map(subproc, range(10))
+
+    """
     for num_topics in range(6, 101):
         lda_model = "Data/model/model_topic{0}.lda".format(num_topics)
         cloud_name = "Data/wordcloud/wordcloud_{0}_topic".format(num_topics)
@@ -152,3 +174,4 @@ if __name__ == "__main__":
         docs_topic = doc2topic_id(corpus_lda_tfidf)
         _, topic_freq_word, topic_terms_20_above = word_cloud_list(dictionary, corpus_tfidf, docs_topic, topic_terms)
         create_wordcloud(topic_freq_word, topic_terms_20_above, cloud_name, "/usr/share/fonts/opentype/ipafont-gothic/ipag.ttf")
+    """
