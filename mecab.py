@@ -10,9 +10,11 @@ def extract_csv_column_data(filepath, filename):
     
     df = pd.read_csv(filepath)
 
-    for key, column in df[["既知化DB番号", "対応方法"]].iterrows():
+    for key, column in df[["既知化DB番号", "既知化DB名", "対応方法"]].iterrows():
         name = "{0}{1}対応方法.txt".format(filename, column["既知化DB番号"])
-        with open(name, "w") as f:
+        with open(name, "a") as f:
+            f.write(column["既知化DB名"])
+            f.write("\n")
             f.write(column["対応方法"])
 
     print("データ保存終了")
